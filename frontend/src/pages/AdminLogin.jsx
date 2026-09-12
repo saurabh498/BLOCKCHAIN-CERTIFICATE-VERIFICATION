@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const BACKEND_URL =
+    import.meta.env.VITE_BACKEND_URL ||
+    "http://127.0.0.1:8000";
+
 function AdminLogin() {
     const navigate = useNavigate();
 
@@ -13,32 +17,58 @@ function AdminLogin() {
     const [error, setError] =
         useState("");
 
-    const handleSubmit = (event) => {
+    const [loading, setLoading] =
+        useState(false);
+
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         setError("");
+        setLoading(true);
 
-        /*
-         * Demo authentication
-         *
-         * These credentials are for the
-         * college project demonstration.
-         */
+        try {
+            const response = await fetch(
+                `${BACKEND_URL}/admin/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                    }),
+                }
+            );
 
-        if (
-            username === "admin" &&
-            password === "admin123"
-        ) {
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    "Invalid username or password."
+                );
+            }
+
             sessionStorage.setItem(
                 "adminAuthenticated",
                 "true"
             );
 
-            navigate("/admin/dashboard");
-        } else {
-            setError(
-                "Invalid username or password."
+            sessionStorage.setItem(
+                "adminToken",
+                data.access_token
             );
+
+            navigate("/admin/dashboard");
+
+        } catch (error) {
+            setError(
+                error.message ||
+                "Unable to connect to the server."
+            );
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -107,8 +137,11 @@ function AdminLogin() {
                     <button
                         type="submit"
                         className="primary-btn"
+                        disabled={loading}
                     >
-                        Login
+                        {loading
+                            ? "Logging in..."
+                            : "Login"}
                     </button>
 
                 </form>

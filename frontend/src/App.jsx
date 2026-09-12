@@ -16,13 +16,13 @@ import "./App.css";
 
 
 function ProtectedAdminRoute({ children }) {
-
   const isAuthenticated =
-    sessionStorage.getItem(
-      "adminAuthenticated"
-    ) === "true";
+    sessionStorage.getItem("adminAuthenticated") === "true";
 
-  if (!isAuthenticated) {
+  const adminToken =
+    sessionStorage.getItem("adminToken");
+
+  if (!isAuthenticated || !adminToken) {
     return (
       <Navigate
         to="/admin"
@@ -82,7 +82,11 @@ function App() {
 
         <Route
           path="/issue"
-          element={<IssueCertificate />}
+          element={
+            <ProtectedAdminRoute>
+              <IssueCertificate />
+            </ProtectedAdminRoute>
+          }
         />
 
 

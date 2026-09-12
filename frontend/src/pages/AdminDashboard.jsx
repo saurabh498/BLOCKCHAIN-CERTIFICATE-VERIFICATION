@@ -32,6 +32,10 @@ function AdminDashboard() {
             "adminAuthenticated"
         );
 
+        sessionStorage.removeItem(
+            "adminToken"
+        );
+
         navigate("/admin");
     };
 
@@ -106,6 +110,22 @@ function AdminDashboard() {
         }
 
 
+        const token =
+            sessionStorage.getItem("adminToken");
+
+
+        if (!token) {
+
+            setError(
+                "Admin session expired. Please login again."
+            );
+
+            navigate("/admin");
+
+            return;
+        }
+
+
         setLoading(true);
         setMessage("");
         setError("");
@@ -120,6 +140,10 @@ function AdminDashboard() {
                     )}`,
                     {
                         method: "POST",
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`,
+                        },
                     }
                 );
 
@@ -129,6 +153,25 @@ function AdminDashboard() {
 
 
             if (!response.ok) {
+
+                if (
+                    response.status === 401 ||
+                    response.status === 403
+                ) {
+
+                    sessionStorage.removeItem(
+                        "adminAuthenticated"
+                    );
+
+                    sessionStorage.removeItem(
+                        "adminToken"
+                    );
+
+                    navigate("/admin");
+
+                    return;
+                }
+
 
                 throw new Error(
                     result.detail ||

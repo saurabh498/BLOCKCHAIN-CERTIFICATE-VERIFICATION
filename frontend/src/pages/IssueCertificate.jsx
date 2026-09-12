@@ -1,8 +1,12 @@
 import { useState } from "react";
 
-const BACKEND_URL = "http://10.186.118.226:8000";
+const BACKEND_URL =
+    import.meta.env.VITE_BACKEND_URL ||
+    "http://127.0.0.1:8000";
+
 
 function IssueCertificate() {
+
     const [formData, setFormData] = useState({
         certificate_id: "",
         student_name: "",
@@ -13,11 +17,16 @@ function IssueCertificate() {
     });
 
     const [file, setFile] = useState(null);
+
     const [loading, setLoading] = useState(false);
+
     const [result, setResult] = useState(null);
+
     const [error, setError] = useState("");
 
+
     const handleChange = (event) => {
+
         const { name, value } = event.target;
 
         setFormData((previous) => ({
@@ -28,30 +37,64 @@ function IssueCertificate() {
         setError("");
     };
 
+
     const handleFileChange = (event) => {
-        const selectedFile = event.target.files[0];
+
+        const selectedFile =
+            event.target.files[0];
 
         setFile(selectedFile || null);
+
         setError("");
     };
 
+
     const handleSubmit = async (event) => {
+
         event.preventDefault();
 
         setError("");
         setResult(null);
 
+
         if (!file) {
-            setError("Please upload the certificate PDF.");
+
+            setError(
+                "Please upload the certificate PDF."
+            );
+
             return;
         }
+
 
         if (file.type !== "application/pdf") {
-            setError("Only PDF certificate files are allowed.");
+
+            setError(
+                "Only PDF certificate files are allowed."
+            );
+
             return;
         }
 
+
+        const token =
+            sessionStorage.getItem("adminToken");
+
+
+        if (!token) {
+
+            setError(
+                "Admin session expired. Please login again."
+            );
+
+            window.location.href = "/admin";
+
+            return;
+        }
+
+
         setLoading(true);
+
 
         const data = new FormData();
 
@@ -87,27 +130,61 @@ function IssueCertificate() {
 
         data.append("file", file);
 
+
         try {
+
             const response = await fetch(
                 `${BACKEND_URL}/register-certificate`,
                 {
                     method: "POST",
+
+                    headers: {
+                        Authorization:
+                            `Bearer ${token}`,
+                    },
+
                     body: data,
                 }
             );
 
-            const responseData = await response.json();
+
+            const responseData =
+                await response.json();
+
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                sessionStorage.removeItem(
+                    "adminAuthenticated"
+                );
+
+                sessionStorage.removeItem(
+                    "adminToken"
+                );
+
+                window.location.href = "/admin";
+
+                return;
+            }
+
 
             if (!response.ok) {
+
                 throw new Error(
                     responseData.detail ||
                     "Certificate registration failed."
                 );
             }
 
+
             setResult(responseData);
 
+
         } catch (error) {
+
             console.error(
                 "Certificate issue error:",
                 error
@@ -119,11 +196,14 @@ function IssueCertificate() {
             );
 
         } finally {
+
             setLoading(false);
         }
     };
 
+
     const handleReset = () => {
+
         setFormData({
             certificate_id: "",
             student_name: "",
@@ -134,58 +214,83 @@ function IssueCertificate() {
         });
 
         setFile(null);
+
         setResult(null);
+
         setError("");
+
 
         const fileInput =
             document.getElementById(
                 "certificate-file"
             );
 
+
         if (fileInput) {
             fileInput.value = "";
         }
     };
 
+
     const getQrUrl = () => {
+
         if (!result?.qr_file_path) {
             return null;
         }
+
 
         const normalizedPath =
             result.qr_file_path
                 .replaceAll("\\", "/")
                 .replace(/^\/+/, "");
 
+
         return `${BACKEND_URL}/${normalizedPath}`;
     };
 
+
     const downloadQr = async () => {
+
         const qrUrl = getQrUrl();
+
 
         if (!qrUrl) {
             return;
         }
 
+
         try {
-            const response = await fetch(qrUrl);
+
+            const response =
+                await fetch(qrUrl);
+
 
             if (!response.ok) {
-                throw new Error("QR code could not be downloaded.");
+
+                throw new Error(
+                    "QR code could not be downloaded."
+                );
             }
 
-            const blob = await response.blob();
+
+            const blob =
+                await response.blob();
+
 
             const url =
                 window.URL.createObjectURL(blob);
 
+
             const link =
                 document.createElement("a");
 
+
             link.href = url;
+
 
             link.download =
                 `${formData.certificate_id}-QR.png`;
+
 
             document.body.appendChild(link);
 
@@ -193,13 +298,17 @@ function IssueCertificate() {
 
             link.remove();
 
+
             window.URL.revokeObjectURL(url);
 
+
         } catch (error) {
+
             console.error(
                 "QR download error:",
                 error
             );
+
 
             window.open(
                 qrUrl,
@@ -208,7 +317,9 @@ function IssueCertificate() {
         }
     };
 
+
     return (
+
         <div className="page-container">
 
             <div className="form-card issue-page">
@@ -271,7 +382,6 @@ function IssueCertificate() {
                         </div>
 
                     </div>
-
                 )}
 
 
@@ -298,7 +408,6 @@ function IssueCertificate() {
                         </div>
 
                     </div>
-
                 )}
 
 
@@ -517,6 +626,7 @@ function IssueCertificate() {
                                     {file ? "✓" : "↑"}
                                 </div>
 
+
                                 {file ? (
 
                                     <>
@@ -543,6 +653,7 @@ function IssueCertificate() {
                                     </>
 
                                 )}
+
 
                                 <input
                                     id="certificate-file"
@@ -597,7 +708,6 @@ function IssueCertificate() {
 
                                 <>
                                     <span className="button-spinner"></span>
-
                                     Registering on Blockchain...
                                 </>
 
@@ -612,7 +722,6 @@ function IssueCertificate() {
                         </button>
 
                     </form>
-
                 )}
 
 
@@ -705,7 +814,6 @@ function IssueCertificate() {
                                 </div>
 
                             </div>
-
                         )}
 
 
@@ -747,13 +855,11 @@ function IssueCertificate() {
                                     </span>
 
                                     <strong className="result-hash">
-
                                         {
                                             result.transaction_hash ||
                                             result.blockchain_tx_hash ||
                                             "Available on blockchain"
                                         }
-
                                     </strong>
 
                                 </div>
@@ -766,12 +872,10 @@ function IssueCertificate() {
                                     </span>
 
                                     <strong>
-
                                         {
                                             result.block_number ??
                                             "Confirmed"
                                         }
-
                                     </strong>
 
                                 </div>
@@ -784,12 +888,10 @@ function IssueCertificate() {
                                     </span>
 
                                     <strong className="result-hash">
-
                                         {
                                             result.contract_address ||
                                             "Configured blockchain contract"
                                         }
-
                                     </strong>
 
                                 </div>
@@ -814,7 +916,6 @@ function IssueCertificate() {
                         </div>
 
                     </div>
-
                 )}
 
             </div>
@@ -822,5 +923,6 @@ function IssueCertificate() {
         </div>
     );
 }
+
 
 export default IssueCertificate;

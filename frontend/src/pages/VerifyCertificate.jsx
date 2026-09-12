@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-const BACKEND_URL = "http://10.186.118.226:8000";
+const BACKEND_URL =
+    import.meta.env.VITE_BACKEND_URL ||
+    "http://127.0.0.1:8000";
 
 function VerifyCertificate() {
     const { certificateId: qrCertificateId } =
